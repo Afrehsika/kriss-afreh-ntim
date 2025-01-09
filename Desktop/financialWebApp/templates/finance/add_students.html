@@ -2,58 +2,116 @@
 
 {% block content %}
 <div class="container py-4">
+    <!-- Breadcrumb Navigation -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'finance:student' %}">Students</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'finance:student' %}">Students</a>
+            </li>
             <li class="breadcrumb-item active" aria-current="page">Add Students</li>
         </ol>
     </nav>
-</div>
 
-<div class="container">
-    <div class="card">
+    <!-- Card for Add Student Form -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Add Student</h5>
+        </div>
         <div class="card-body">
-            <h5 class="card-title">Add Student</h5>
-            <form action="{% url 'finance:add_student' %}" method="post" class="row g-3">
+            <form action="{% url 'finance:add_student' %}" method="post" enctype="multipart/form-data" class="row g-3">
                 {% csrf_token %}
                 {% include 'partials/_messages.html' %}
+                
+                <!-- Name Field -->
                 <div class="col-md-6">
                     <label for="name" class="form-label">Name</label>
-                    <input type="text" id="name" name="name" value="{{ values.name }}" class="form-control">
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        value="{{ values.name }}" 
+                        class="form-control" 
+                        placeholder="Enter full name" 
+                        required>
                 </div>
+
+                <!-- Student ID Field -->
                 <div class="col-md-6">
                     <label for="student_id" class="form-label">Student ID</label>
-                    <input type="number" id="student_id" name="student_id" class="form-control">
+                    <input 
+                        type="number" 
+                        id="student_id" 
+                        name="student_id" 
+                        class="form-control" 
+                        placeholder="Enter student ID">
                 </div>
+
+                <!-- Index Number Field -->
                 <div class="col-md-6">
                     <label for="index_number" class="form-label">Index Number</label>
-                    <input type="number" id="index_number" name="index_number" class="form-control">
+                    <input 
+                        type="number" 
+                        id="index_number" 
+                        name="index_number" 
+                        class="form-control" 
+                        placeholder="Enter index number">
                 </div>
+
+                <!-- Reference Number Field -->
                 <div class="col-md-6">
                     <label for="reference_number" class="form-label">Reference Number</label>
-                    <input type="number" id="reference_number" name="reference_number" class="form-control">
+                    <input 
+                        type="number" 
+                        id="reference_number" 
+                        name="reference_number" 
+                        class="form-control" 
+                        placeholder="Enter reference number">
                 </div>
+
+                <!-- Phone Field -->
                 <div class="col-md-6">
-                    <label for="phone" class="form-label">Phone(start with 233)</label>
-                    <input type="text" id="phone" name="phone" class="form-control">
+                    <label for="phone" class="form-label">Phone (Start with 233)</label>
+                    <input 
+                        type="text" 
+                        id="phone" 
+                        name="phone" 
+                        class="form-control" 
+                        placeholder="Enter phone number (e.g., 233xxxxxxxxx)" 
+                        required>
                 </div>
+
+                <!-- Email Field -->
                 <div class="col-md-6">
                     <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" name="email" class="form-control">
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control" 
+                        placeholder="Enter email address">
                 </div>
+
+                <!-- Level Dropdown -->
                 <div class="col-md-6">
                     <label for="level" class="form-label">Level</label>
-                    <select id="level" name="level" class="form-select">
+                    <select 
+                        id="level" 
+                        name="level" 
+                        class="form-select" 
+                        required>
+                        <option value="" disabled selected>Select level</option>
                         {% for level_code, level_name in level %}
                         <option value="{{ level_code }}">{{ level_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Save</button>
+
+                <!-- Submit Button -->
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-success">Save</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-{% endblock content %}
+{% endblock %}

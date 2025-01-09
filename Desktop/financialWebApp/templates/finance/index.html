@@ -56,7 +56,7 @@
                     <td>GH&#8373; {{ student.total_paid }}</td>
                     <td>GH&#8373; {{ student.balance }}</td>
                     <td>
-                        <a href="{% url 'finance:edit_student' student.name %}" class="btn btn-info btn-sm">Edit</a>
+                        <a href="{% url 'finance:edit_student' student.id %}" class="btn btn-info btn-sm">Edit</a>
                     </td>
                 </tr>
                 {% endfor %}

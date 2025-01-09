@@ -27,6 +27,104 @@ import requests
 
 
 
+
+import openpyxl
+from django.core.exceptions import ValidationError
+
+@login_required(login_url="/authentication/login")
+def add_students_upload(request):
+    context = {
+        "level": LEVEL,
+        "values": request.POST,
+    }
+
+    if request.method == "GET":
+        return render(request, "finance/add_students_import.html", context)
+
+    if request.method == "POST":
+        if 'excel_file' in request.FILES:  # Check if an Excel file was uploaded
+            excel_file = request.FILES['excel_file']
+            try:
+                workbook = openpyxl.load_workbook(excel_file)
+                sheet = workbook.active
+                rows = list(sheet.iter_rows(min_row=2, values_only=True))  # Skip the header row
+                for row in rows:
+                    name, student_id, index_number, reference_number, phone, email, level = row
+                    
+                    # Validation for each row
+                    if not name:
+                        messages.error(request, "Name is required for all rows")
+                        return render(request, "finance/add_students.html", context)
+                    if not phone:
+                        messages.error(request, f"Phone number is required for {name}")
+                        return render(request, "finance/add_students.html", context)
+                    if level not in dict(LEVEL).keys():
+                        messages.error(request, f"Invalid level for {name}")
+                        return render(request, "finance/add_students.html", context)
+
+                    # Handle optional fields
+                    student_id = student_id or None
+                    index_number = index_number or None
+                    reference_number = reference_number or None
+
+                    # Save each student
+                    Student.objects.create(
+                        name=name,
+                        student_id=student_id,
+                        index_number=index_number,
+                        reference_number=reference_number,
+                        phone=phone,
+                        email=email,
+                        level=level,
+                    )
+                messages.success(request, "All students added successfully!")
+                return redirect("finance:student")
+
+            except ValidationError as e:
+                messages.error(request, f"File validation error: {e}")
+                return render(request, "finance/add_students.html", context)
+            except Exception as e:
+                messages.error(request, f"An error occurred: {e}")
+                return render(request, "finance/add_students.html", context)
+
+        # For single student addition
+        name = request.POST['name']
+        student_id = request.POST.get('student_id', None)
+        index_number = request.POST.get('index_number', None)
+        reference_number = request.POST.get('reference_number', None)
+        phone = request.POST['phone']
+        email = request.POST['email']
+        level = request.POST['level']
+
+        # Validation for single student
+        if not name:
+            messages.error(request, "Name is required")
+            return render(request, "finance/add_students.html", context)
+        if not phone:
+            messages.error(request, "Phone number is required")
+            return render(request, "finance/add_students.html", context)
+        if level not in dict(LEVEL).keys():
+            messages.error(request, "Invalid level selected")
+            return render(request, "finance/add_students.html", context)
+
+        Student.objects.create(
+            name=name,
+            student_id=student_id,
+            index_number=index_number,
+            reference_number=reference_number,
+            phone=phone,
+            email=email,
+            level=level,
+        )
+        messages.success(request, "Student saved successfully")
+        return redirect("finance:student")
+
+
+
+
+
+
+
 def summary_links(request):
     context = {
         'levels': LEVEL,
@@ -40,6 +138,8 @@ def level_summary(request, level):
         'sessions': sessions,
     }
     return render(request, 'level_summary.html', context)
+
+
 
 
 def session_summary_pdf(request, level, session_id):
@@ -283,18 +383,16 @@ def addlevelbill(request):
     if request.method == "POST":
         level = request.POST['level']
         academic_fees = request.POST['academic']
-        student_fees = request.POST['student']
-        exams_fees = request.POST['exams']
         session_name = request.POST['session'] 
         
+        print(f"Submitted session_name: {session_name}")
+        session_instance = get_object_or_404(Session, pk=session_name)
        
-        session_instance = get_object_or_404(Session, session=session_name)
+
 
         LevelBill.objects.create(
             level_name=level,
             academic_fees=academic_fees,
-            student_fees=student_fees,
-            exams_fees=exams_fees,
             academic_session=session_instance
         )
         messages.success(request, "Fees is added successfully")
@@ -321,16 +419,12 @@ def editlevelbill(request, level_id):
     if request.method == "POST":
         level = request.POST['level']
         academic_fees = request.POST['academic']
-        student_fees = request.POST['student']
-        exams_fees = request.POST['exams']
         session = request.POST['session']
         
         session_instance = get_object_or_404(Session, session=session)
         # Update the level bill object
         level_bill.level_name = level
         level_bill.academic_fees = academic_fees
-        level_bill.student_fees = student_fees
-        level_bill.exams_fees = exams_fees
         level_bill.academic_session = session_instance
         level_bill.save()
 
@@ -498,10 +592,11 @@ def add_students(request):
         messages.success(request, "Student saved successfully")
         return redirect("finance:student")
 
-@login_required(login_url="/authentication/login")   
-def student_edit(request, name):
+
+@login_required(login_url="/authentication/login")
+def student_edit(request, student_id1):
     try:
-        student = Student.objects.get(name=name)
+        student = Student.objects.get(id=student_id1)  # Use student_id to fetch the student
     except Student.DoesNotExist:
         messages.error(request, "Student not found")
         return redirect("finance:student")
@@ -519,16 +614,16 @@ def student_edit(request, name):
         # Validation checks
         if not form_name:
             messages.error(request, "Name is required")
-            return redirect("finance:edit_student", name=name)
+            return redirect("finance:edit_student", student_id=student_id1)
         elif not (form_student_id or form_index_number or form_reference_number):
             messages.error(request, "At least one of Student ID, Index Number, or Reference Number is required")
-            return redirect("finance:edit_student", name=name)
+            return redirect("finance:edit_student", student_id=student_id1)
         elif not form_phone:
             messages.error(request, "Phone number is required")
-            return redirect("finance:edit_student", name=name)
+            return redirect("finance:edit_student", student_id=student_id1)
         elif form_level not in dict(LEVEL).keys():
             messages.error(request, "Invalid level selected")
-            return redirect("finance:edit_student", name=name)
+            return redirect("finance:edit_student", student_id=student_id1)
 
         # Update student object with form data
         student.name = form_name
@@ -543,10 +638,10 @@ def student_edit(request, name):
         messages.success(request, "Student Profile Updated successfully")
         return redirect("finance:student")
 
-    context ={
+    context = {
         'student': student,
         'level': LEVEL,
-        'values':student
+        'values': student
     }
     return render(request, "finance/edit_student.html", context)
 
@@ -656,7 +751,7 @@ def generate_receipt_pdf(data):
     content.append(logo)
 
     # Add title
-    title_text = '<b>AKROKERRI COLLEGE OF EDUCATION</b>'
+    title_text = '<b>FEE PAYMENT SYSTEM</b>'
     title = Paragraph(title_text, styles['Title'])
     content.append(title)
 
@@ -704,6 +799,8 @@ def send_sms(api_key, message, sender_id, phone_number):
     return response_json
         
 
+from datetime import datetime
+from tablib import Dataset
 
 def import_excel(request):
     if request.method == 'POST':
@@ -713,16 +810,22 @@ def import_excel(request):
 
         for data in imported_data:
             session_name = data[0]
-            start_date = datetime.strptime(data[1].strftime('%Y-%m-%d'), '%Y-%m-%d') if data[1] else None
-            end_date = datetime.strptime(data[2].strftime('%Y-%m-%d'), '%Y-%m-%d') if data[2] else None
-            is_current = False if not data[3] else True 
-            
-            session, _ = Session.objects.get_or_create(session=session_name,
-                                                        defaults={
-                                                            'start_date': start_date,
-                                                            'end_date': end_date,
-                                                            'is_current_session': is_current
-                                                        })
+            start_date = datetime.strptime(data[1], '%Y-%m-%d') if data[1] else None
+            end_date = datetime.strptime(data[2], '%Y-%m-%d') if data[2] else None
+            if data[3] is not None:
+                is_current = str(data[3]).lower() in ['true', 'yes', '1']
+            else:
+                is_current = False
+
+
+            session, _ = Session.objects.get_or_create(
+                session=session_name,
+                defaults={
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'is_current_session': is_current
+                }
+            )
 
             student_name = data[4]
             student_id = data[5]
@@ -731,45 +834,48 @@ def import_excel(request):
             phone = data[8]
             email = data[9]
             level = data[10]
-            balance = data[11]
+            balance = float(data[11]) if data[11] else 0.0
 
-            student, _ = Student.objects.get_or_create(name=student_name,
-                                                        defaults={
-                                                            'student_id': student_id,
-                                                            'index_number': index_number,
-                                                            'reference_number': reference_number,
-                                                            'phone': phone,
-                                                            'email': email,
-                                                            'level': level,
-                                                            'payment_balance': balance
-                                                        })
+            student, _ = Student.objects.get_or_create(
+                name=student_name,
+                defaults={
+                    'student_id': student_id,
+                    'index_number': index_number,
+                    'reference_number': reference_number,
+                    'phone': phone,
+                    'email': email,
+                    'level': level,
+                    'payment_balance': balance
+                }
+            )
 
-            
-            academic_fee = data[12]
-            student_fee = data[13]
-            exams_fee = data[14]
+            academic_fee = float(data[12]) if data[12] else 0.0
+            student_fee = float(data[13]) if data[13] else 0.0
+            exams_fee = float(data[14]) if data[14] else 0.0
 
-            level_bill, _ = LevelBill.objects.get_or_create(level_name=level,
-                                                             academic_session=session,
-                                                             defaults={
-                                                                 'academic_fees': academic_fee,
-                                                                 'student_fees': student_fee,
-                                                                 'exams_fees': exams_fee
-                                                             })
-            amount_paid = data[15]
+            level_bill, _ = LevelBill.objects.get_or_create(
+                level_name=level,
+                academic_session=session,
+                defaults={
+                    'academic_fees': academic_fee,
+                    'student_fees': student_fee,
+                    'exams_fees': exams_fee
+                }
+            )
+
+            amount_paid = float(data[15]) if data[15] else 0.0
             bank = data[16]
-            payment_date = datetime.strptime(data[17].strftime('%Y-%m-%d'), '%Y-%m-%d') if data[17] else datetime.now()  # Use current date if no date provided
+            payment_date = datetime.strptime(data[17], '%Y-%m-%d') if data[17] else datetime.now()
 
-            payment, _ = Payment.objects.get_or_create(student=student,
-                                                        levelBilling=level_bill,
-                                                        session=session,
-                                                        defaults={
-                                                            'paid_amount': amount_paid,
-                                                            'bank_of_payment': bank,
-                                                            'date': payment_date
-                                                        })
+            payment, _ = Payment.objects.get_or_create(
+                student=student,
+                levelBilling=level_bill,
+                session=session,
+                defaults={
+                    'paid_amount': amount_paid,
+                    'bank_of_payment': bank,
+                    'date': payment_date
+                }
+            )
 
-
-          
     return render(request, "import.html")
-

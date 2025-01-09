@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Form for Excel Upload -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Upload Students via Excel</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- File Input -->
+                <div class="mb-3">
+                    <label for="excel_file" class="form-label">Choose Excel File</label>
+                    <input 
+                        type="file" 
+                        id="excel_file" 
+                        name="excel_file" 
+                        class="form-control" 
+                        accept=".xlsx, .xls" 
+                        required>
+                    <div class="invalid-feedback">
+                        Please select a valid Excel file (.xlsx or .xls).
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Client-side Validation Script -->
+<script>
+    (function () {
+        'use strict';
+
+        // Bootstrap validation styles
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %}

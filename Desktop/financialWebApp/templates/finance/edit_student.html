@@ -13,7 +13,7 @@
 
 <div class="card">
     <div class="card-body">
-      <form action="{% url 'finance:edit_student' student.name %}" method="post" class="row g-3">
+      <form action="{% url 'finance:edit_student' student.id %}" method="post" class="row g-3">
         {% csrf_token %}
         {% include 'partials/_messages.html'%}
         <div class="col-md-12">

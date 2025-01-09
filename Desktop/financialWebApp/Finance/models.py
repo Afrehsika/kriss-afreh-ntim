@@ -65,15 +65,15 @@ class Student(models.Model):
 class LevelBill(models.Model):
     level_name = models.CharField(max_length=25, choices=LEVEL, null=True)
     academic_session = models.ForeignKey(Session, on_delete=models.CASCADE,null=True)
-    academic_fees = models.FloatField(null=True)
-    student_fees = models.FloatField(null=True)
-    exams_fees = models.FloatField(null=True)
+    academic_fees = models.FloatField(null=True, default=0.00)
+    student_fees = models.FloatField(null=True, default=0.00)
+    exams_fees = models.FloatField(null=True, default=0.00)
 
     def __str__(self):
         return f"Fees set for {self.level_name} in {self.academic_session}"
     
     def fees(self):
-        payable_amount = self.academic_fees + self.student_fees + self.exams_fees
+        payable_amount = (self.academic_fees or 0) + (self.student_fees or 0) + (self.exams_fees or 0)
         return payable_amount
 
 class Payment(models.Model):
@@ -95,4 +95,19 @@ class Payment(models.Model):
         total_paid = self.student.payments.aggregate(total_paid=models.Sum('paid_amount'))['total_paid'] or 0
         self.student.payment_balance = total_fees - total_paid
         self.student.save()
-        
+
+
+
+class StudentBalance(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    total_fees = models.DecimalField(max_digits=10, decimal_places=2)
+    total_paid = models.DecimalField(max_digits=10, decimal_places=2)
+    level_bill = models.ForeignKey(LevelBill, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('student', 'session')
+
+    def __str__(self):
+        return f'{self.student} - {self.session} Balance'     

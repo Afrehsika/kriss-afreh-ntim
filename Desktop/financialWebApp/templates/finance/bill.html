@@ -30,9 +30,8 @@
         <thead>
             <tr>
                 <th>Level</th>
-                <th>Academic Fees</th>
-                <th>Student Fees</th>
-                <th>Examination Fees</th>
+                <th>SRC Dues</th>
+              
                 
                 <th></th>
             </tr>
@@ -42,8 +41,6 @@
             <tr>
                 <td>{{ bill.level_name }}</td>
                 <td>{{ bill.academic_fees }}</td>
-                <td>{{ bill.student_fees }}</td>
-                <td>{{ bill.exams_fees }}</td>
                 <td>
                     <a href="{% url 'finance:edit_bill' bill.id %}" class="btn btn-info btn-sm">Edit</a>
                 </td>
